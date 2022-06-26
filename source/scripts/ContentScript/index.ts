@@ -1,12 +1,11 @@
 import { earthProvider, providerManager, ethereumProvider } from './inject';
-
 import { Script } from '~scripts/Provider/Script';
 
 new Script().start();
 
 inject(providerManager());
 inject(earthProvider());
-function injectEthereum(asset: string, name: string) {
+function injectEthereum(asset: string, name: string, overrideEthereum = true) {
   inject(
     ethereumProvider({
       name,
@@ -15,11 +14,14 @@ function injectEthereum(asset: string, name: string) {
         networkId: 1,
         chainId: 1,
       },
-      overrideEthereum: true,
+      overrideEthereum,
     })
   );
 }
-injectEthereum('ETH', 'ETH');
+
+chrome.storage.local.get(['wallet'], (storage) => {
+  injectEthereum('ETH', 'ETH', storage.wallet.overrideEthereum);
+});
 
 function inject(content: string) {
   const container = document.head || document.documentElement;

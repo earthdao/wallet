@@ -12,6 +12,14 @@
   padding-bottom: 10px;
 }
 
+.checkOverride {
+  display: flex;
+
+  .overrideLabel {
+    margin-left: 10px;
+  }
+}
+
 .nextCont {
   position: absolute;
   left: 0;

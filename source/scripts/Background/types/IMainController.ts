@@ -24,4 +24,5 @@ export interface IMainController {
     route?: string,
     asset?: NetworkSymbol
   ) => Promise<Windows.Window | null>;
+  updateOverrideEthereum: (state: boolean) => void;
 }

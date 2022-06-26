@@ -15,6 +15,8 @@ export interface IDAppController {
   isPageOriginAllowed: (origin: string) => boolean;
   setSignatureRequest: (req: keyable, requestId: string) => void;
   getSignatureRequest: () => keyable;
+  setSignatureType: (reqType: string | null) => void;
+  getSignatureType: () => string | null;
   addSignRequest: (request: any, id: string) => void;
   setDappConnectedAddress: (address: string, origin: string) => void;
   setApprovedIdentityJSON: (identityJSON: string) => void;

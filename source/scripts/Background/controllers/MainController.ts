@@ -12,6 +12,7 @@ import store from '~state/store';
 import { preloadStateAsync } from '~state/app';
 import { storeEntities } from '~state/entities';
 import { NetworkSymbol } from '~global/types';
+import { updateOverrideEthereum } from '~state/wallet';
 
 export default class MainController {
   accounts: Readonly<IAccountsController>;
@@ -96,5 +97,9 @@ export default class MainController {
       top: 0,
       left: _window.width - 375,
     });
+  }
+
+  updateOverrideEthereum(state: boolean) {
+    store.dispatch(updateOverrideEthereum(state));
   }
 }

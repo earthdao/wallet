@@ -1,3 +1,4 @@
+import { recoverPersonalSignature } from '@metamask/eth-sig-util';
 import { ethers } from 'ethers';
 import { v4 as uuid } from 'uuid';
 import { browser, Runtime } from 'webextension-polyfill-ts';
@@ -108,12 +109,63 @@ export const messagesHandler = (
           'https://eth-mainnet.g.alchemy.com/v2/WQY8CJqsPNCqhjPqPfnPApgc_hXpnzGc'
         );
         result = await provider.send(args[0], args[1]);
+      } else if (method === 'wallet.sendTransaction') {
+      } else if (method === 'wallet.signMessage') {
+        mainController.dapp.setSignatureType('personal_sign');
+        const signatureRequest = args[0];
+        const windowId = uuid();
+        mainController.dapp.setSignatureRequest(signatureRequest, windowId);
+        const popup = await mainController.createPopup(windowId, 'sign');
+        pendingWindow = true;
+        window.addEventListener(
+          'signTypedData',
+          async (ev: any) => {
+            if (ev.detail.substring(1) === windowId) {
+              const result = mainController.dapp.getApprovedIdentityJSON();
+              await mainController.provider.ethSign(windowId, result);
+              port.postMessage({
+                id: message.id,
+                data: { result },
+              });
+              pendingWindow = false;
+            }
+          },
+          {
+            once: true,
+            passive: true,
+          }
+        );
+
+        browser.windows.onRemoved.addListener((id) => {
+          if (popup && id === popup.id) {
+            port.postMessage({
+              id: message.id,
+              data: { result: 'USER_REJECTED' },
+            });
+            pendingWindow = false;
+          }
+        });
+
+        return Promise.resolve(null);
+      } else if (method === 'wallet.ecRecover') {
+        result = recoverPersonalSignature({
+          data: args[0],
+          signature: args[1],
+        });
       } else if (method === 'wallet.signTypedData') {
         if (pendingWindow) {
           return Promise.resolve(null);
         }
-        const signatureRequest = args[0].params[0];
+        let signatureRequest;
+        if (args[0].method === 'eth_signTypedData') {
+          signatureRequest = args[0].params[0];
+        } else if (args[0].method === 'eth_signTypedData_v3') {
+          signatureRequest = args[0].params[1];
+        } else if (args[0].method === 'eth_signTypedData_v4') {
+          signatureRequest = args[0].params[1];
+        }
         const windowId = uuid();
+        mainController.dapp.setSignatureType(args[0].method);
         mainController.dapp.setSignatureRequest(signatureRequest, windowId);
         const popup = await mainController.createPopup(windowId, 'sign');
         pendingWindow = true;
@@ -195,6 +247,8 @@ export const messagesHandler = (
               //https://forum.dfinity.org/t/mismatching-dfinity-agent-versions-can-cause-hashing-issues/7359/5
               const approvedIdentityJSON =
                 mainController.dapp.getApprovedIdentityJSON();
+
+              mainController.dapp.setSignatureType(null);
               if (method === 'wallet.createSession') {
                 result = await mainController.provider.createSession(
                   signatureRequest,
